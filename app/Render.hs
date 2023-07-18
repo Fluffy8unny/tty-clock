@@ -32,15 +32,6 @@ calculateOffset matrix cfg screenSize = let
                                     in
                                        ( offsetX, offsetY )
 
-centerClock :: Integral a => [[Char]] -> (a, a) -> YMLConfig -> [[Char]]
-centerClock matrix (offsetX,offsetY) cfg = let
-                                            marginX = replicate (fromIntegral offsetX) (symbolOff cfg) 
-                                            marginY = replicate (fromIntegral offsetY) "\n" 
-                                            horizontalCentered = map ( \row -> marginX ++ row ++ marginX ) matrix
-                                        in
-                                            marginY ++ horizontalCentered ++ marginY
-
-
 calcZoomFactor :: (Foldable t,Integral b) => [t a] -> (b, b) -> b -> Int
 calcZoomFactor matrix screenSize border= let
                                             calMaxFactor s s' = (s' - border) `div` s 
@@ -59,17 +50,13 @@ getZoomFactor matrix screenSize cfg@YMLConfig{zoom=z} = case z of
                                                  ZOOM_AUTO     -> fromIntegral $ calcZoomFactor matrix screenSize ((fromIntegral.border) cfg)     
                                                  ZOOM_OFF      -> 1 
 
-matrixToString :: [[Char]] -> [Char]
-matrixToString = intercalate "\n" 
-
-renderClock :: (Ord a, Bits b1, Integral b2) =>YMLConfig -> [a] -> (b2, b2) -> M.Map a [b1] -> ([Char],(Int,Int))
+renderClock :: (Ord a, Bits b1, Integral b2) =>YMLConfig -> [a] -> (b2, b2) -> M.Map a [b1] -> ([[Char]],(Int,Int))
 renderClock cfg time windowSize lut = let
                                         clockString    = renderString cfg $ renderMatrix time (glyphWidth cfg + 1) lut
 
                                         zoomFactor     = getZoomFactor clockString windowSize cfg
                                         zoomedString   = applyZoom zoomFactor clockString
 
-                                        offset         = calculateOffset zoomedString cfg windowSize
-                                        centeredMatrix = centerClock zoomedString offset cfg
+                                        (offX,offY)    = calculateOffset zoomedString cfg windowSize
                                      in
-                                        (matrixToString centeredMatrix, getMatrixShape centeredMatrix)
+                                        (zoomedString,(fromIntegral  offX, fromIntegral offY))

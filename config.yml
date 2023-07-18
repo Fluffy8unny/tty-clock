@@ -4,9 +4,9 @@ symbolOff    : " "
 symbolOn     : "█"
 timeDisplay  : "%H:%M:%S"
 border       : 20
-zoom         : 2  
+zoom         : "auto"  
 centerX      : "center"
-centerY      : "off"
+centerY      : "center" 
 
 glyphs:
   - char       : "0"

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE InstanceSigs #-}
+
 module Config (
                 loadYML
               , getLUT
@@ -18,9 +19,8 @@ import qualified Data.Map as M
 data CharAsBin = CharAsBin{  char :: Char
                            , bits :: [Int]
                           } deriving (Show, Generic)
+
 instance FromJSON CharAsBin
-
-
 data ZoomSetting = INT Int| ZOOM_AUTO | ZOOM_OFF deriving (Show)
 instance FromJSON ZoomSetting where
     parseJSON :: Value -> Parser ZoomSetting
@@ -32,6 +32,7 @@ instance FromJSON ZoomSetting where
     parseJSON _          = error "zoom can be either an Integer,'off' or 'auto'"
 
 data CenteringSettings  = FIXED Int | CENTER deriving (Show)
+
 instance FromJSON CenteringSettings where
     parseJSON :: Value -> Parser CenteringSettings
     parseJSON (String i) | i == T.pack "center" = return CENTER
@@ -53,7 +54,6 @@ data YMLConfig  = YMLConfig{     glyphs      :: [CharAsBin]
                                , centerY     :: CenteringSettings
                      } deriving (Show,Generic)
 instance FromJSON YMLConfig
-
 
 verifyConfig :: YMLConfig -> YMLConfig
 verifyConfig cfg = let
