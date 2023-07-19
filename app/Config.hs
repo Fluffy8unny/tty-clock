@@ -32,32 +32,32 @@ instance FromJSON ConsoleColor where
                               case T.words i of
                                 [intensity, color] -> return $ CColor (parseStr (T.unpack intensity) validIntensities) (parseStr (T.unpack color) validColors) 
                                 [color]            -> return $ CColor ANS.Vivid (parseStr (T.unpack color) validColors)
-                                _                  -> error "You need to provider either 'Intensity Color' or 'Color'"
+                                _                  -> error  $ "You need to provider either 'Intensity Color' or 'Color'.\n Possible colors:" ++ show validColors ++"\n. Possible Intensities:" ++ show validIntensities
 
 data CharAsBin = CharAsBin{  char :: Char
                            , bits :: [Int]
                           } deriving (Show, Generic)
 instance FromJSON CharAsBin
 
+parseEnumOrVal :: (Integral t, Bounded t) =>M.Map String  a -> (t -> a) -> [Char] -> Value -> Parser a
+parseEnumOrVal _ valGen errStr (Number i)                          = case S.toBoundedInteger i of
+                                                                        Just  i -> return (valGen i)
+                                                                        Nothing -> error errStr 
+parseEnumOrVal enumMap _ _ (String i) | M.member stringVal enumMap = return $ enumMap M.! stringVal
+                                        where 
+                                          stringVal = T.unpack i  
+parseEnumOrVal _ _ errStr _                                        = error errStr 
+
 data ZoomSetting = INT Int| ZOOM_AUTO | ZOOM_OFF deriving (Show)
 instance FromJSON ZoomSetting where
     parseJSON :: Value -> Parser ZoomSetting
-    parseJSON (String i)   | i == T.pack "auto" =  return ZOOM_AUTO
-                           | i == T.pack "off"  =  return ZOOM_OFF
-    parseJSON (Number i) = case S.toBoundedInteger i of
-                               Just i -> return (INT i)
-                               Nothing -> error "zoom can be either an Integer,'off' or 'auto'"
-    parseJSON _          = error "zoom can be either an Integer,'off' or 'auto'"
+    parseJSON = parseEnumOrVal (M.fromList [("auto",ZOOM_AUTO),("off",ZOOM_OFF)]) INT "zoom can be either an integer, 'off' or 'auto' " 
 
 data CenteringSettings  = FIXED Int | CENTER deriving (Show)
 instance FromJSON CenteringSettings where
     parseJSON :: Value -> Parser CenteringSettings
-    parseJSON (String i) | i == T.pack "center" = return CENTER
-                         | i == T.pack "off"    = return (FIXED 0)
-    parseJSON (Number i) = case S.toBoundedInteger i of
-                               Just i -> return (FIXED i)
-                               Nothing -> error "centering needs to be either 'center', 'off' or an integer"
-    parseJSON _          = error "centering needs to be either 'center','off' or an integer"
+    parseJSON = parseEnumOrVal (M.fromList [("center",CENTER),("off",FIXED 0)]) FIXED "centering needs to be either 'center', 'off' or an integer (offset)" 
+
 
 data YMLConfig  = YMLConfig{     glyphs      :: [CharAsBin]
                                , glyphHeight :: Int
