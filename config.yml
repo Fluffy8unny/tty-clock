@@ -7,6 +7,9 @@ border       : 20
 zoom         : "auto"  
 centerX      : "center"
 centerY      : "center" 
+updateDelay  : 10000
+foreground   : Vivid Yellow
+background   : Dull Black
 
 glyphs:
   - char       : "0"

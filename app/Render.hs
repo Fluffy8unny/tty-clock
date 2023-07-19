@@ -5,7 +5,6 @@ import Data.List (transpose,intercalate)
 import qualified Data.Map as M
 
 import Config
-import Data.Yaml.Builder (string)
 
 renderMatrix::(Ord a,Bits b,Integral c)=>[a]->c->M.Map a [b]->[[Bool]]
 renderMatrix str numBits lut = let 
@@ -37,7 +36,8 @@ calcZoomFactor matrix screenSize border= let
                                             calMaxFactor s s' = (s' - border) `div` s 
                                             matSize = ( (fromIntegral.length.head) matrix,(fromIntegral.length) matrix)
                                         in
-                                            max 0 $ minimum $ (\f-> fromIntegral $ calMaxFactor (f matSize) (f screenSize)) <$> [fst,snd]             
+                                            max 1 $ minimum $ (\f-> fromIntegral $ calMaxFactor (f matSize) (f screenSize)) <$> [fst,snd]             
+
 applyZoom::Int->[[a]]->[[a]]
 applyZoom factor arr = let
                           repl  = concatMap (replicate factor)
@@ -50,7 +50,7 @@ getZoomFactor matrix screenSize cfg@YMLConfig{zoom=z} = case z of
                                                  ZOOM_AUTO     -> fromIntegral $ calcZoomFactor matrix screenSize ((fromIntegral.border) cfg)     
                                                  ZOOM_OFF      -> 1 
 
-renderClock :: (Ord a, Bits b1, Integral b2) =>YMLConfig -> [a] -> (b2, b2) -> M.Map a [b1] -> ([[Char]],(Int,Int))
+renderClock :: (Ord a, Bits b, Integral c) =>YMLConfig -> [a] -> (c, c) -> M.Map a [b] -> ([[Char]],(Int,Int))
 renderClock cfg time windowSize lut = let
                                         clockString    = renderString cfg $ renderMatrix time (glyphWidth cfg + 1) lut
 

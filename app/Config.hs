@@ -7,6 +7,7 @@ module Config (
               , YMLConfig( .. )
               , ZoomSetting(..)
               , CenteringSettings (..)
+              , ConsoleColor (..)
               , CharAsBin( .. )
 ) where
 
@@ -15,12 +16,29 @@ import qualified Data.Text as T
 import qualified Data.Scientific as S
 import GHC.Generics ( Generic )
 import qualified Data.Map as M
+import qualified System.Console.ANSI as ANS
+
+data ConsoleColor = CColor{   intensity :: ANS.ColorIntensity
+                            , colorName :: ANS.Color
+                           } deriving Show
+
+instance FromJSON ConsoleColor where
+    parseJSON :: Value -> Parser ConsoleColor
+    parseJSON (String i) = let
+                               parseStr s vs    = if s `elem` vs then read s else error $  s ++ "not in " ++ show vs  
+                               validColors      = [ "Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White" ]
+                               validIntensities = [ "Dull", "Vivid"]
+                            in
+                              case T.words i of
+                                [intensity, color] -> return $ CColor (parseStr (T.unpack intensity) validIntensities) (parseStr (T.unpack color) validColors) 
+                                [color]            -> return $ CColor ANS.Vivid (parseStr (T.unpack color) validColors)
+                                _                  -> error "You need to provider either 'Intensity Color' or 'Color'"
 
 data CharAsBin = CharAsBin{  char :: Char
                            , bits :: [Int]
                           } deriving (Show, Generic)
-
 instance FromJSON CharAsBin
+
 data ZoomSetting = INT Int| ZOOM_AUTO | ZOOM_OFF deriving (Show)
 instance FromJSON ZoomSetting where
     parseJSON :: Value -> Parser ZoomSetting
@@ -32,7 +50,6 @@ instance FromJSON ZoomSetting where
     parseJSON _          = error "zoom can be either an Integer,'off' or 'auto'"
 
 data CenteringSettings  = FIXED Int | CENTER deriving (Show)
-
 instance FromJSON CenteringSettings where
     parseJSON :: Value -> Parser CenteringSettings
     parseJSON (String i) | i == T.pack "center" = return CENTER
@@ -52,6 +69,9 @@ data YMLConfig  = YMLConfig{     glyphs      :: [CharAsBin]
                                , zoom        :: ZoomSetting
                                , centerX     :: CenteringSettings
                                , centerY     :: CenteringSettings
+                               , updateDelay :: Int
+                               , foreground  :: ConsoleColor
+                               , background  :: ConsoleColor
                      } deriving (Show,Generic)
 instance FromJSON YMLConfig
 
@@ -64,8 +84,8 @@ verifyConfig cfg = let
                       errMsgHeight = checkError heightOk "Byte in glyph is out of bounds for glpyHeight. Should be < 2^glyphHeight. Glyph:"
                    in 
                       case all (==True) $ widthOK ++ heightOk of
-                        True -> cfg
-                        False -> error (errMsgHeight++errMsgWidth)
+                          True  -> cfg
+                          False -> error (errMsgHeight++errMsgWidth)
 
 loadYML :: FilePath -> IO YMLConfig
 loadYML path = do
