@@ -39,5 +39,7 @@ executable tty-clock
                      ,yaml
                      ,terminal-size
                      ,ansi-terminal
+                     ,unix
+
     hs-source-dirs:   app
     default-language: Haskell2010

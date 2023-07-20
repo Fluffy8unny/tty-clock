@@ -90,6 +90,16 @@
   (major1) == 1 && (major2) <  11 || \
   (major1) == 1 && (major2) == 11 && (minor) <= 1)
 #endif /* MIN_VERSION_time */
+/* package unix-2.7.2.2 */
+#ifndef VERSION_unix
+#define VERSION_unix "2.7.2.2"
+#endif /* VERSION_unix */
+#ifndef MIN_VERSION_unix
+#define MIN_VERSION_unix(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  7 || \
+  (major1) == 2 && (major2) == 7 && (minor) <= 2)
+#endif /* MIN_VERSION_unix */
 /* package yaml-0.11.11.0 */
 #ifndef VERSION_yaml
 #define VERSION_yaml "0.11.11.0"

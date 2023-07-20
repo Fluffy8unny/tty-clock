@@ -81,7 +81,7 @@ verifyConfig cfg = let
                       widthOK              = map (all (<( 2 ^ glyphWidth cfg )).bits) (glyphs cfg)             
                       checkError errs msg = concatMap (\x-> msg ++ (show.snd) x) $ filter (not.fst) $ zipWith (,) errs (glyphs cfg) 
                       errMsgWidth  = checkError widthOK  "Width of glyph is not equal to glyphWidth. Glyph:"
-                      errMsgHeight = checkError heightOk "Byte in glyph is out of bounds for glpyHeight. Should be < 2^glyphHeight. Glyph:"
+                      errMsgHeight = checkError heightOk "Value in glyph is out of bounds for glpyHeight. Should be < 2^glyphHeight. Glyph:"
                    in 
                       case all (==True) $ widthOK ++ heightOk of
                           True  -> cfg
