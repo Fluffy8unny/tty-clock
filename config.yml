@@ -3,7 +3,8 @@ glyphWidth   : 3
 symbolOff    : " " 
 symbolOn     : "█"
 timeDisplay  : "%H:%M:%S"
-border       : 20
+dateDisplay  : "%Y-%b-%y"
+border       : 2
 zoom         : "auto"  
 centerX      : "center"
 centerY      : "center" 

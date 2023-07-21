@@ -15,17 +15,16 @@ import System.Posix.Signals (installHandler, Handler(Catch), sigINT, sigTERM)
 import qualified Control.Exception as E
 
 import Config
-import Render ( renderClock )
+import Render ( renderClock, getDateOffset )
 
 data ConsoleState = ConsoleState {
                                        wSize   :: (Integer,Integer)
                                      , config  :: YMLConfig
                                      , charLUT :: M.Map Char [Int]
                                      , timeStr :: String
+                                     , dateStr :: String
                                 }
 
-getTime::String->IO String
-getTime timeStr = formatTime defaultTimeLocale timeStr <$> getZonedTime
 
 getSize::IO (Integer,Integer)
 getSize = do
@@ -36,7 +35,7 @@ getSize = do
 
 drawTimeString :: ConsoleState -> IO ()
 drawTimeString state = do
-                  let ConsoleState {wSize=_wSize, config=_config, charLUT=_charLUT, timeStr=_timeStr} = state
+                  let ConsoleState {wSize=_wSize, config=_config, charLUT=_charLUT, timeStr=_timeStr,dateStr=_dateStr} = state
                   let (mat,offs) = renderClock _config _timeStr  _wSize _charLUT
                   ANS.setCursorPosition  (snd offs) 0
 
@@ -44,21 +43,26 @@ drawTimeString state = do
                       ANS.setCursorColumn (fst offs)
                       putStrLn   x
 
+                  ANS.setCursorColumn (getDateOffset mat offs _dateStr)
+                  putStrLn _dateStr
+
 updateClock :: StateT ConsoleState IO ()
 updateClock = do
                 cs@ConsoleState {wSize=_wSize, config=_config,  timeStr=_timeStr} <- get
                 currentSize <- liftIO  getSize
-                time        <- liftIO $ getTime (timeDisplay _config)
-                
+                currentTime <- liftIO getZonedTime               
+
+                let fmtTime str = formatTime defaultTimeLocale str currentTime
+                let [time,date]  = [fmtTime (tstrf _config) | tstrf <- [timeDisplay,dateDisplay] ]
+
                 let timeChanged = time /= _timeStr
                 let winChanged  = currentSize /= _wSize
                  
-                let currentState = cs{wSize=currentSize,timeStr=time} 
+                let currentState = cs{wSize=currentSize,timeStr=time, dateStr = date} 
 
                 when winChanged $  liftIO ANS.clearScreen 
                 when (timeChanged || winChanged) $ liftIO (drawTimeString currentState)
-                
-                put currentState
+
                 liftIO $ threadDelay (updateDelay _config)
                 updateClock
 
@@ -84,4 +88,4 @@ main = do
         installHandler sigINT (Catch $  handleShutdown tid) Nothing
         installHandler sigTERM (Catch $ handleShutdown tid) Nothing
 
-        evalStateT updateClock $ ConsoleState (0,0) cfg (getLUT cfg) "" 
+        evalStateT updateClock $ ConsoleState (0,0) cfg (getLUT cfg) "" ""

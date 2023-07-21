@@ -1,4 +1,4 @@
-module Render (renderClock) where
+module Render (renderClock, getDateOffset) where
 
 import Data.Bits ( Bits((.&.), zeroBits, bit) ) 
 import Data.List (transpose,intercalate)
@@ -60,3 +60,9 @@ renderClock cfg time windowSize lut = let
                                         (offX,offY)    = calculateOffset zoomedString cfg windowSize
                                      in
                                         (zoomedString,(fromIntegral  offX, fromIntegral offY))
+
+getDateOffset timeMatrix matrixOffset dateStr = let
+                                                    (mw,mh)      = getMatrixShape timeMatrix
+                                                    clockOffset  = ( mw - length dateStr ) `div` 2
+                                                in
+                                                  fst matrixOffset + clockOffset 

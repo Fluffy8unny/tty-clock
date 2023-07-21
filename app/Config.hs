@@ -65,6 +65,7 @@ data YMLConfig  = YMLConfig{     glyphs      :: [CharAsBin]
                                , symbolOff   :: Char
                                , symbolOn    :: Char
                                , timeDisplay :: String
+                               , dateDisplay :: String
                                , border      :: Int
                                , zoom        :: ZoomSetting
                                , centerX     :: CenteringSettings
