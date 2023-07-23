@@ -7,6 +7,8 @@ import Control.Monad (forM_,when)
 import Control.Monad.State
 import Control.Concurrent (threadDelay,ThreadId,myThreadId)
 
+import Paths_TTYClock
+
 import qualified System.Console.Terminal.Size as T
 import qualified System.Console.ANSI as ANS
 
@@ -17,14 +19,6 @@ import qualified Control.Exception as E
 import Config
 import Render ( renderClock, getDateOffset )
 
-data ConsoleState = ConsoleState {
-                                       wSize   :: (Integer,Integer)
-                                     , config  :: YMLConfig
-                                     , charLUT :: M.Map Char [Int]
-                                     , timeStr :: String
-                                     , dateStr :: String
-                                }
-
 
 getSize::IO (Integer,Integer)
 getSize = do
@@ -32,6 +26,23 @@ getSize = do
            case size of
              Just T.Window{T.height=h, T.width=w} -> return (w,h)
              Nothing                              -> error "Couldn't get window size"
+
+configureTerminal :: YMLConfig -> IO ()
+configureTerminal cfg = let
+                          setColor part color  = ANS.setSGR [ANS.SetColor part (intensity color) (colorName color)]
+                         in do
+                            setColor ANS.Foreground (foreground cfg)
+                            setColor ANS.Background (background cfg)
+                            ANS.hideCursor
+
+
+data ConsoleState = ConsoleState {
+                                       wSize   :: (Integer,Integer)
+                                     , config  :: YMLConfig
+                                     , charLUT :: M.Map Char [Int]
+                                     , timeStr :: String
+                                     , dateStr :: String
+                                }
 
 drawTimeString :: ConsoleState -> IO ()
 drawTimeString state = do
@@ -66,26 +77,24 @@ updateClock = do
                 liftIO $ threadDelay (updateDelay _config)
                 updateClock
 
-setColor :: ANS.ConsoleLayer -> ConsoleColor -> IO ()
-setColor part color  = ANS.setSGR [ANS.SetColor part (intensity color) (colorName color)]
-
 handleShutdown :: ThreadId -> IO ()
 handleShutdown mainThreadID= do
                                ANS.showCursor
                                ANS.setCursorPosition 0 0
                                ANS.clearScreen
                                E.throwTo mainThreadID ExitSuccess
+installHandlers :: IO Handler
+installHandlers = do
+                    tid <- myThreadId
+                    installHandler sigINT (Catch $  handleShutdown tid) Nothing
+                    installHandler sigTERM (Catch $ handleShutdown tid) Nothing
 
 main :: IO ()
 main = do
-        cfg <- loadYML "config.yml"
+        dataPath <- getDataFileName "config.yml"
+        cfg <- loadYML dataPath
         
-        setColor ANS.Foreground (foreground cfg)
-        setColor ANS.Background (background cfg)
-        ANS.hideCursor
-        
-        tid <- myThreadId
-        installHandler sigINT (Catch $  handleShutdown tid) Nothing
-        installHandler sigTERM (Catch $ handleShutdown tid) Nothing
+        configureTerminal cfg         
+        installHandlers
 
         evalStateT updateClock $ ConsoleState (0,0) cfg (getLUT cfg) "" ""
