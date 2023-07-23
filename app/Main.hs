@@ -8,6 +8,7 @@ import Control.Monad.State
 import Control.Concurrent (threadDelay,ThreadId,myThreadId)
 
 import Paths_TTYClock
+import Options.Applicative
 
 import qualified System.Console.Terminal.Size as T
 import qualified System.Console.ANSI as ANS
@@ -68,12 +69,13 @@ updateClock = do
 
                 let timeChanged = time /= _timeStr
                 let winChanged  = currentSize /= _wSize
-                 
-                let currentState = cs{wSize=currentSize,timeStr=time, dateStr = date} 
 
+                let currentState = cs{wSize=currentSize,timeStr=time, dateStr = date} 
+                put currentState
+                
                 when winChanged $  liftIO ANS.clearScreen 
                 when (timeChanged || winChanged) $ liftIO (drawTimeString currentState)
-
+                
                 liftIO $ threadDelay (updateDelay _config)
                 updateClock
 
@@ -89,11 +91,26 @@ installHandlers = do
                     installHandler sigINT (Catch $  handleShutdown tid) Nothing
                     installHandler sigTERM (Catch $ handleShutdown tid) Nothing
 
+
+fileToCFG :: Parser (Maybe FilePath)
+fileToCFG = optional $ strOption
+            ( long "config"
+                <> short 'c'
+                <> metavar "CONFIGFILE"
+                <> help "YAML configuration file. Default is the cabal install direcotry."
+            )
+
+getConfig :: IO YMLConfig
+getConfig = do 
+            let fDesc = fullDesc <> header "Simple clock, that is configured by a yml file. Supports various display modes." <> progDesc "If you installed it via cabal a default config should be provided. You can also provide one with the -c flag. An example config is available @ https://github.com/Fluffy8unny/tty-clock" 
+            x <- execParser (info (fileToCFG<**>helper) fDesc) 
+            case x of 
+               Nothing -> loadYML =<< getDataFileName "config.yml"
+               Just pth -> loadYML pth
+
 main :: IO ()
 main = do
-        dataPath <- getDataFileName "config.yml"
-        cfg <- loadYML dataPath
-        
+        cfg <- getConfig
         configureTerminal cfg         
         installHandlers
 

@@ -9,7 +9,7 @@ zoom         : "auto"
 centerX      : "center"
 centerY      : "center" 
 updateDelay  : 10000
-foreground   : Vivid Yellow
+foreground   : Vivid Green
 background   : Dull Black
 
 glyphs:
